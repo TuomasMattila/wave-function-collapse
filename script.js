@@ -1,12 +1,12 @@
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 800;
-const IMAGE_SIZE = 50;
-const GRID_WIDTH = CANVAS_WIDTH / IMAGE_SIZE;
-const GRID_HEIGHT = CANVAS_HEIGHT / IMAGE_SIZE;
+const GRID_WIDTH = 8;
+const GRID_HEIGHT = 15;
 const GRID_SIZE = GRID_WIDTH * GRID_HEIGHT
+const IMAGE_SIZE = 50;
+const CANVAS_WIDTH = GRID_WIDTH * IMAGE_SIZE;
+const CANVAS_HEIGHT = GRID_HEIGHT * IMAGE_SIZE;
 
 class Tile {
-    constructor(image_path, image_size, sides){
+    constructor(image_path, image_size, sides) {
         this.img = new Image(image_size, image_size);
         this.img.src = image_path;
         let nesw = sides.split(" ");
@@ -27,7 +27,7 @@ const context = canvas.getContext("2d");
 // Style the grid
 context.canvas.width = CANVAS_WIDTH;
 context.canvas.height = CANVAS_HEIGHT;
-canvas.style.backgroundColor = 'black';
+canvas.style.backgroundColor = 'rgba(255, 0, 0, 1)';
 canvas.style.border = '1px solid #000000';
 
 // Numbers for the grid
@@ -45,12 +45,10 @@ tiles.push(new Tile('./tiles/tile2.png', IMAGE_SIZE, 'www wbw wbw wbw'))
 tiles.push(new Tile('./tiles/tile3.png', IMAGE_SIZE, 'www wbw www wbw'))
 tiles.push(new Tile('./tiles/tile4.png', IMAGE_SIZE, 'www www wbw wbw'))
 tiles.push(new Tile('./tiles/tile5.png', IMAGE_SIZE, 'www www www wbw'))
-
 tiles.push(new Tile('./tiles/tile6.png', IMAGE_SIZE, 'wbw www wbw wbw'))
 tiles.push(new Tile('./tiles/tile7.png', IMAGE_SIZE, 'wbw wbw www wbw'))
 tiles.push(new Tile('./tiles/tile8.png', IMAGE_SIZE, 'wbw wbw wbw www'))
 tiles.push(new Tile('./tiles/tile9.png', IMAGE_SIZE, 'wbw www wbw www'))
-
 tiles.push(new Tile('./tiles/tile10.png', IMAGE_SIZE, 'wbw www www wbw'))
 tiles.push(new Tile('./tiles/tile11.png', IMAGE_SIZE, 'wbw wbw www www'))
 tiles.push(new Tile('./tiles/tile12.png', IMAGE_SIZE, 'www wbw wbw www'))
@@ -62,43 +60,45 @@ tiles.push(new Tile('./tiles/tile15.png', IMAGE_SIZE, 'www www wbw www'))
 let grid = Array(GRID_SIZE).fill(undefined)
 let entropies = Array(GRID_SIZE).fill(tiles.length);
 
+
 function placeTileOnGrid(tile, x, y) {
     if (!grid[x + y * GRID_WIDTH]) {
         context.drawImage(tile.img, x * IMAGE_SIZE, y * IMAGE_SIZE);
         grid[x + y * GRID_WIDTH] = tile;
         entropies[x + y * GRID_WIDTH] = Infinity;
-        console.log(`Placed tile ${tile.img.src.substring(28)} on ${x} ${y} `);
+        // console.log(`Placed tile ${tile.img.src.substring(28)} on ${x} ${y} `);
     } else {
         console.log(`Cannot place tile on ${x} ${y}, spot already taken`);
     }
 }
 
+
+/**
+ * Algorithm:
+ *  While every spots entropy is not the same:
+ *      - Calculate all entropies
+ *      - Pick one spot with minimal entropy
+ *      - Place a suitable tile on the chosen spot
+ * 
+ */
 function initWaveFunctionCollapse() {
-    /* Algorithm:
-    while (grid.includes(undefined)) {
-        // Calculate all entropies
-        // Pick one spot with minimal entropy
-        // Place a suitable tile on the chosen spot
-    */
-    // Calculate entropies
     while (!entropies.every(e => e === entropies[0])) {
+        // Calculate entropies
         calculate_entropies()
 
         // Get sport with smallest entropy
         let new_idx = entropies.indexOf(Math.min(...entropies))
         let new_x = new_idx % GRID_WIDTH
         let new_y = Math.floor(new_idx / GRID_WIDTH) % GRID_HEIGHT 
-        console.log(`Smallest entropy on index ${new_idx} with an entropy of ${entropies[new_idx]}`)
+        // console.log(`Smallest entropy on index ${new_idx} with an entropy of ${entropies[new_idx]}`)
 
         // Get tile that can go there and place it
         _, valid_tiles = getEntropy(new_idx)
         placeTileOnGrid(valid_tiles[Math.floor(Math.random() * valid_tiles.length)], new_x, new_y)
     }
-
     console.log("Done!")
-
-
 }
+
 
 function calculate_entropies() {
     for (let y = 0; y < GRID_HEIGHT; y++) {
@@ -108,6 +108,7 @@ function calculate_entropies() {
         } 
     }
 }
+
 
 function getEntropy(idx) {
     if (entropies[idx] === Infinity)
@@ -144,6 +145,7 @@ function getEntropy(idx) {
 
 }
 
+
 function whatCanGoHere(n, w, s, e) {
     let entropy = 0;
     let valid_tiles = [];
@@ -169,6 +171,7 @@ function whatCanGoHere(n, w, s, e) {
     return entropy, valid_tiles;
 }
 
+
 // Button that initializes wave function collapse
 const btn = document.getElementById('generate-button');
 btn.addEventListener('click', () => {
@@ -184,6 +187,7 @@ btn.addEventListener('click', () => {
     initWaveFunctionCollapse()
 });
 
+
 // Button that generates a totally random grid
 const btnGenerateRandomGrid = document.getElementById('generate-random-grid');
 btnGenerateRandomGrid.addEventListener('click', () => {
@@ -196,4 +200,14 @@ btnGenerateRandomGrid.addEventListener('click', () => {
             placeTileOnGrid(tiles[idx], x, y)
         } 
     }
+});
+
+
+// Clicking the canvas prints the color that was clicked.
+// For debugging purposes.
+canvas.addEventListener('click', event => {
+    const bounding = canvas.getBoundingClientRect();
+    const x = event.clientX - bounding.left;
+    const y = event.clientY - bounding.top;
+    console.log(context.getImageData(x, y, 1, 1).data);
 });
